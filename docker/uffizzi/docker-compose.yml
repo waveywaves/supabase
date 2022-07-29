@@ -11,6 +11,22 @@ x-uffizzi:
     service: studio
     port: 3000
 
+configs:
+  kong-config:
+    file: ./volumes/api/kong.yml
+  db-00-initial-schema:
+    file: ./volumes/db/init/00-initial-schema.sql
+  db-01-auth-schema:
+    file: ./volumes/db/init/01-auth-schema.sql
+  db-02-storage-schema:
+    file: ./volumes/db/init/02-storage-schema.sql
+  db-03-post-setup:
+    file: ./volumes/db/init/03-post-setup.sql
+  db-04-pg-graphql:
+    file: ./volumes/db/init/04-pg-graphql.sql
+  db-data:
+    file: ./volumes/db/init/data.sql
+
 services:
   studio:
     container_name: supabase-studio
@@ -40,8 +56,9 @@ services:
       # https://github.com/supabase/cli/issues/14
       KONG_DNS_ORDER: LAST,A,CNAME
       KONG_PLUGINS: request-transformer,cors,key-auth,acl
-    volumes:
-      - ./volumes/api:/var/lib/kong
+    configs:
+      - source: kong-config
+        target: /var/lib/kong/kong.yml
 
   auth:
     container_name: supabase-auth
@@ -141,8 +158,6 @@ services:
       # TODO: https://github.com/supabase/storage-api/issues/55
       REGION: stub
       GLOBAL_S3_BUCKET: stub
-    volumes:
-      - ./volumes/storage:/var/lib/storage
 
   meta:
     container_name: supabase-meta
@@ -168,6 +183,16 @@ services:
       - ${POSTGRES_PORT}:5432
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      # - ./volumes/db/data:/var/lib/postgresql/data
-      - ./volumes/db/init:/docker-entrypoint-initdb.d
+    configs:
+      - source: db-00-initial-schema
+        target: /docker-entrypoint-initdb.d/00-initial-schema.sql
+      - source: db-01-auth-schema
+        target: /docker-entrypoint-initdb.d/01-auth-schema.sql
+      - source: db-02-storage-schema
+        target: /docker-entrypoint-initdb.d/02-storage-schema.sql
+      - source: db-03-post-setup
+        target: /docker-entrypoint-initdb.d/03-post-setup.sql
+      - source: db-04-pg-graphql
+        target: /docker-entrypoint-initdb.d/04-pg-graphql.sql
+      - source: db-data
+        target: /docker-entrypoint-initdb.d/data.sql
