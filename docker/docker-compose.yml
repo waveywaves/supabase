@@ -6,6 +6,11 @@
 
 version: "3.8"
 
+x-uffizzi:
+  ingress:
+    service: studio
+    port: 3000
+
 services:
   studio:
     container_name: supabase-studio
